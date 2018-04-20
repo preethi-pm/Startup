@@ -1,0 +1,42 @@
+<# This script is to remove the maintenange page and bring back the application by deleting the app_offline.htm file from the root folder. 
+
+#>
+[string]$TargetPath = "D:\WebSites"
+$path = Get-Location
+$tanscriptLog = "$path\remov_Maint.log"
+Write-host -back cyan -fore black "Script name :Remove_Maintenance_Page`n"
+Start-transcript -path $tanscriptLog -ea 0 -append -noclobber
+
+ if(Test-Path "$TargetPath")
+ { 
+    Write-host "The base directory is found, checking for farm root folder..`n"
+}
+else 
+    { 
+    write-host -fore Red " The base directory is not found "
+    }
+
+$WebRoot = (Get-ChildItem $TargetPath -Force |  where {$_.Attributes -match'Directory' -and ($_.Name -match "sharepoint" -or $_.Name -match "sp2010" -or $_.Name -match "mysharepoint" -or $_.Name -match "atom" -or $_.Name -match "xCCB" -or $_.Name -match "sharedspaces" -or $_.Name -match "mysharedspaces")} | Select-Object FullName )
+# First, replace everything in front of and including the equal sign.
+#$WebRoot_1 = ($WebRoot -replace "@{")
+# Then replace the double closing curly braces with just one curly brace.
+#$webRoot_2 = ($WebRoot -replace '}}', '}')
+write-host "Maintenance page will be removed `n "
+#Write-output $WebRoot
+
+    foreach ($item in $WebRoot) 
+        {
+        $Fileexists= test-path "$($item.FullName)\app_offline.htm"
+        #check if the app_offline file exists
+            if ($Fileexists -eq $True){
+            remove-item -path "$($item.FullName)\app_offline.htm" -force -ea silentlycontinue
+            write-host -fore Green " Maintenance message successfully removed from $item `n" 
+            write-host -fore black -back yellow "Please verify if the sharepoint site is up and running"
+            }
+            else {
+            write-host -fore red -back white " The file app_offline.htm does not exists in $item `n "
+            }  
+         }    
+stop-transcript -ea 0
+Write-host ""
+exit
