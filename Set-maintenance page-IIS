@@ -1,0 +1,49 @@
+<# This script is to put a web application running on IIS offline and display a maintenance message. The application essentially shuts down the site, unloads it from the server, and stops processing any requests to that site. All requests to that website will redirect to that app_offline.htm file. The script looks for sharepoint and sp2010 root folders under under D:\websites\  and drops the file app_offline.htm. 
+#>
+
+[string]$TargetPath = "D:\WebSites"
+$path = Get-Location
+$tanscriptLog = "$path\Set_Maint.log"
+Write-host -back cyan -fore black "Script name :Set_Maintenance_Page`n"
+Start-transcript -path $tanscriptLog -ea 0 -append -noclobber
+
+if(Test-Path "$TargetPath"){ 
+Write-host "`n The base directory is found, checking for farm root folder.."
+}
+else { 
+write-host -fore Red "`n The specified Target D:\Websites is not found "
+write-host "`n Exiting "
+}
+
+$WebRoot = (Get-ChildItem $TargetPath -Force |  where {$_.Attributes -match'Directory' -and ($_.Name -match "sharepoint" -or $_.Name -match "sp2010" -or $_.Name -match "mysharepoint" -or $_.Name -match "atom" -or $_.Name -match "xCCB" -or $_.Name -match "sharedspaces" -or $_.Name -match "mysharedspaces" )} | Select-Object FullName )
+
+#$WebRoot_1 = ($WebRoot -replace "@{")
+write-host " `nValidating the source file existing in 'L:\Support\app_offline.htm'"
+
+$SourceFile= Test-Path L:\Support\app_offline.htm
+if($SourceFile -eq $True){
+write-host "`n Source file is found."
+write-host " `n Maintenance page will be dropped to the target root folders`n "
+}
+else {
+write-host -fore Red " THe source file at 'L:\Support\app_offline.htm' is not found.." -ForegroundColor black -BackgroundColor Red
+write-host "Exiting.."
+exit
+}
+
+foreach ($item in $WebRoot) 
+{
+
+copy-item -path "L:\Support\app_offline.htm"  -destination $item.FullName 
+
+	if (Test-Path "$($item.FullName)\app_offline.htm"){ 
+    write-host -fore Green " Maintenance page added successfully in $item "
+	}
+	else { 
+    write-host -fore Red " Maintenance page failed to add to the root folder"
+    }
+}
+stop-transcript -ea 0
+Write-host " Please verify if the sharepoint site displays the maintenance message." -ForegroundColor black -BackgroundColor Yellow
+Write-host ""
+
